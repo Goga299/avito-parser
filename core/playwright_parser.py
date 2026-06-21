@@ -5,12 +5,18 @@ from loguru import logger
 import random
 import time
 import os
+import json
 
 class PlaywrightParser(BaseParser):
     """Парсер с использованием настоящего Chrome и улучшенной маскировкой"""
     
-    def parse(self, url: str) -> Optional[str]:
-        """Загружает страницу с эмуляцией реального пользователя"""
+    def parse(self, url: str, headers: Optional[dict] = None) -> Optional[str]:
+        """Загружает страницу с эмуляцией реального пользователя
+        
+        Args:
+            url: Адрес страницы
+            headers: Дополнительные заголовки (опционально)
+        """
         
         # Используем новые профили
         from services.browser_profiles_2025 import get_random_profile
@@ -55,17 +61,25 @@ class PlaywrightParser(BaseParser):
                     mode = "headless" if use_headless else "headed"
                     logger.info(f"[Playwright] Используется Chromium ({mode})")
                 
+                # Подготавливаем заголовки
+                extra_headers = {'accept-language': profile["headers"]["accept-language"]}
+                
+                # Если переданы дополнительные заголовки - добавляем их
+                if headers:
+                    # Убираем User-Agent, т.к. он уже установлен в контексте
+                    headers_copy = headers.copy()
+                    headers_copy.pop('User-Agent', None)
+                    headers_copy.pop('user-agent', None)
+                    extra_headers.update(headers_copy)
+                    logger.debug(f"[Playwright] Добавлены дополнительные заголовки: {list(headers_copy.keys())}")
+                
                 # Создаем контекст с минимумом заголовков
                 context = browser.new_context(
                     user_agent=profile["headers"]["user-agent"],
                     viewport=profile["viewport"],
                     locale='ru-RU',
                     timezone_id='Europe/Moscow',
-                    # ВАЖНО: передаем только accept-language, остальное генерируется
-                    extra_http_headers={
-                        'accept-language': profile["headers"]["accept-language"]
-                    },
-                    # Дополнительные параметры для реалистичности
+                    extra_http_headers=extra_headers,
                     device_scale_factor=1.0,
                     has_touch=False,
                     is_mobile=False
@@ -78,8 +92,9 @@ class PlaywrightParser(BaseParser):
                 
                 # Применяем улучшенный stealth перед навигацией
                 self._apply_stealth(page)
-                
-                # Эмулируем поведение до перехода
+
+
+# Эмулируем поведение до перехода
                 self._pre_navigation_behavior(page)
                 
                 logger.info(f"[Playwright] Переход на {url}")
@@ -87,7 +102,7 @@ class PlaywrightParser(BaseParser):
                 # Навигация с реалистичным ожиданием
                 response = page.goto(
                     url,
-                    wait_until='domcontentloaded',  # Не ждем networkidle - слишком долго
+                    wait_until='domcontentloaded',
                     timeout=60000
                 )
                 
@@ -182,8 +197,9 @@ class PlaywrightParser(BaseParser):
             logger.debug("[Playwright] Pre-navigation поведение выполнено")
         except Exception as e:
             logger.debug(f"[Playwright] Pre-navigation ошибка: {e}")
-    
-    def _post_navigation_behavior(self, page):
+
+
+def _post_navigation_behavior(self, page):
         """Эмулирует поведение после загрузки"""
         try:
             # Человеческая пауза
@@ -211,7 +227,6 @@ class PlaywrightParser(BaseParser):
         cookies_file = "cookies/playwright_cookies.json"
         if os.path.exists(cookies_file):
             try:
-                import json
                 with open(cookies_file, 'r') as f:
                     cookies = json.load(f)
                     context.add_cookies(cookies)
@@ -222,7 +237,6 @@ class PlaywrightParser(BaseParser):
     def _save_cookies(self, context):
         """Сохраняет cookies"""
         try:
-            import json
             os.makedirs("cookies", exist_ok=True)
             cookies = context.cookies()
             with open("cookies/playwright_cookies.json", 'w') as f:
