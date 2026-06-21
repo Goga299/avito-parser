@@ -7,6 +7,21 @@ from core.local_parser import LocalParser
 from services.avito_processor import AvitoProcessor
 from database.database_manager import db_manager
 
+# 🔥 ДОБАВЛЯЕМ ЗАГОЛОВКИ (ЭТО НОВОЕ)
+HEADERS = {
+    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+    'Accept-Language': 'ru-RU,ru;q=0.8,en-US;q=0.5,en;q=0.3',
+    'Accept-Encoding': 'gzip, deflate, br',
+    'Connection': 'keep-alive',
+    'Upgrade-Insecure-Requests': '1',
+    'Sec-Fetch-Dest': 'document',
+    'Sec-Fetch-Mode': 'navigate',
+    'Sec-Fetch-Site': 'none',
+    'Sec-Fetch-User': '?1',
+    'Cache-Control': 'max-age=0',
+}
+
 def get_parser(mode: str):
     """Фабрика парсеров (полная версия)"""
     if settings.use_local_html:
@@ -39,7 +54,9 @@ def main():
     parser = get_parser(settings.parser_mode)
     try:
         url = None if settings.use_local_html else settings.target_url
-        html = parser.parse(url)
+        
+        # 🔥 ПЕРЕДАЁМ ЗАГОЛОВКИ В ПАРСЕР (ЭТО НОВОЕ)
+        html = parser.parse(url, headers=HEADERS)  # <-- Я добавил headers=HEADERS
         
         if not html:
             logger.error("Не удалось получить HTML. Завершение работы.")
@@ -72,5 +89,5 @@ def main():
     finally:
         db_manager.close()
 
-if __name__ == "__main__":
+if name == "__main__":
     main()
