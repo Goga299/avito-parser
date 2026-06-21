@@ -92,9 +92,8 @@ class PlaywrightParser(BaseParser):
                 
                 # Применяем улучшенный stealth перед навигацией
                 self._apply_stealth(page)
-
-
-# Эмулируем поведение до перехода
+                
+                # Эмулируем поведение до перехода
                 self._pre_navigation_behavior(page)
                 
                 logger.info(f"[Playwright] Переход на {url}")
@@ -197,9 +196,8 @@ class PlaywrightParser(BaseParser):
             logger.debug("[Playwright] Pre-navigation поведение выполнено")
         except Exception as e:
             logger.debug(f"[Playwright] Pre-navigation ошибка: {e}")
-
-
-def _post_navigation_behavior(self, page):
+    
+    def _post_navigation_behavior(self, page):
         """Эмулирует поведение после загрузки"""
         try:
             # Человеческая пауза
